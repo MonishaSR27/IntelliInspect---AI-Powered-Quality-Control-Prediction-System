@@ -1,0 +1,70 @@
+services:
+  # Frontend - Angular Application
+  frontend:
+    build:
+      context: ./frontend-skeleton
+      dockerfile: Dockerfile
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    environment:
+      - API_BASE_URL=http://backend:5000
+    networks:
+      - intelliinspect-network
+
+  # Backend - .NET Core API
+  backend:
+    build:
+      context: ./Backend/IntelliInspect.Backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:80"
+    depends_on:
+      - ml-service
+      - database
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=database,1433;Database=IntelliInspectDb;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;
+      - MLService__BaseUrl=http://ml-service:8000
+    networks:
+      - intelliinspect-network
+
+  # ML Service - Python FastAPI
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ml-models:/app/models
+    networks:
+      - intelliinspect-network
+
+  # Database - SQL Server
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    ports:
+      - "1433:1433"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Express
+      - MSSQL_TCP_PORT=1433
+    volumes:
+      - database-data:/var/opt/mssql
+    networks:
+      - intelliinspect-network
+    restart: unless-stopped
+    user: root
+
+volumes:
+  database-data:
+  ml-models:
+
+networks:
+  intelliinspect-network:
+    driver: bridge
