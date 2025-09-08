@@ -1,0 +1,1 @@
+# IntelliInspect---AI-Powered-Quality-Control-Prediction-System
